@@ -1,0 +1,67 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Ruserdata
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# Output files
+*.html
+*.pdf
+*.docx
+*.xlsx
+*.csv
+
+# Plots and figures
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.svg
+
+# Cache / temporary folders
+/tmp/
+/temp/
+/cache/
+*.tmp
+
+# knitr / rmarkdown cache
+*_cache/
+_cache/
+*.utf8.md
+*.knit.md
+
+# Package build files
+*.tar.gz
+
+# renv (uncomment depending on workflow)
+# renv/library/
+# renv/staging/
+# renv/python/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.Renviron
+.env
+.env.*
+
+# Local secrets / credentials
+*.key
+*.pem
+*.crt
+credentials*
+secrets*
