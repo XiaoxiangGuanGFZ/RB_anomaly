@@ -25,7 +25,7 @@
 library(tidyverse)
 library(trend)
 library(formattable)
-
+library(ggplot2)
 # ----------------- Functions: trend estimation ---------------
 senslope <- function(x) 
 {
@@ -212,7 +212,7 @@ Func_RB_region <- function(df, year, plot = FALSE)
     R1n[i, ] = Func_Ranom_1N(df[i, ])
   }
 
-  # # ensure consistent support
+  # ensure consistent support
   # mask = !is.na(Robs)
   # R1n[!mask] = NA
   
@@ -235,9 +235,9 @@ Func_RB_region <- function(df, year, plot = FALSE)
     ggplot(out) + 
       geom_bar(aes(x = year, y = Ranom), stat = "identity") + 
       labs(x = "time", y = "record-breaking anomaly (%)") +
-      theme_minial()
+      theme_minimal()
   }
-
+  
   return(out)
 }
 
@@ -261,14 +261,15 @@ Func_RB_region_list <- function(list_df, year, plot = FALSE)
   # length of the list
   n = length(list_df)
 
-  # check the shape of the elements (data frames) in the list `list_df`
+  # ---- check the shape of the elements (data frames) in the list `list_df`
   df_1 = list_df[[1]]
   for (i in 2:n) {
     if (!identical(dim(df_1), dim(list_df[[i]]))) {
       stop("RB anomaly calculation stopped. Elements with different shape in the input list.")
     }
   }
-    
+  
+  # ---- for each month, compute Ranom_obs, and R1n
   output_list = list()
   
   # the length of the time series in the data frame (element)
@@ -278,18 +279,18 @@ Func_RB_region_list <- function(list_df, year, plot = FALSE)
   Robs = R1n = matrix(NA, nrow = n, ncol = time_len)
 
   for (i in 1:n) {
-    # iterate each element
+    # iterate each element in the input list
     df = list_df[[i]]
     out_Ranom = Func_RB_region(df, year, plot = FALSE)
-    # out_Ranom$Robs
-    # out_Ranom$R1n
+    # out_Ranom: year R1n Robs Ranom
     output_list[[i]] = out_Ranom
     
-    # asign to matrices 
+    # assign to matrices 
     Robs[i, ] = out_Ranom$Robs
     R1n[i, ] = out_Ranom$R1n
   }
-
+  
+  # ---- estimate the RB anomaly
   out_Ranom = data.frame(
     time = year, 
     # estimate the AVERAGE of anomaly series 
@@ -300,23 +301,24 @@ Func_RB_region_list <- function(list_df, year, plot = FALSE)
     mutate(
       Ranom = ifelse(R1n > 0, round((Robs - R1n) / R1n * 100, 1), NA)
     )
-
+  
   output_list$out_Ranom = out_Ranom
 
-  # visualize the RB anomaly
+  
   if (plot)
   {
+    # ---- visualize the RB anomaly
     ggplot(out_Ranom) + 
       geom_bar(aes(x = year, y = Ranom), stat = "identity") + 
       labs(x = "time", y = "record-breaking anomaly (%)") +
-      theme_minial()
+      theme_minimal()
   }
       
   return(output_list)
 }
 
 
-Func_RB_region_list_CI <- function(list_df, year, runs = 1000)
+Func_RB_region_list_CI <- function(list_df, year, seed = 1, runs = 1000)
 {
   # ---- description:
   # Compute confidence intervals (CI) for the record-breaking anomaly (Ranom)
@@ -340,6 +342,7 @@ Func_RB_region_list_CI <- function(list_df, year, runs = 1000)
   # - 90% and 95% confidence intervals under iid null model
   # 
   
+  set.seed(seed)
   # length of time series
   index = seq(1, length(year), 1)
   
@@ -374,8 +377,9 @@ Func_RB_region_list_CI <- function(list_df, year, runs = 1000)
 
     # compute record-breaking anomaly on shuffled data
     # this yields Ranom under iid assumption
-    df_anom = Func_RB_region_list(list_df_shuffle, year = year_idx, plot = FALSE)$out_Ranom
-
+    output_list = Func_RB_region_list(list_df_shuffle, year = year_idx, plot = FALSE)
+    df_anom = output_list$out_Ranom
+    
     # store anomaly time series for this simulation
     # each column corresponds to a sequence position
     Ranom_multi[i, ] = df_anom$Ranom
