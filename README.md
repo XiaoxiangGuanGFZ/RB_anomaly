@@ -39,5 +39,6 @@ This method allows direct comparison between observations and a null hypothesis 
 # Contact
 
 [Xiaoxiang Guan](guan@gfz.de)
+
 [GFZ Helmholtz Centre for Geosciences](https://www.gfz.de)
 
