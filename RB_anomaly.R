@@ -731,7 +731,8 @@ Func_RB_region_list_CI_fast <- function(
     list_df,
     year,
     seed = 1,
-    runs = 1000
+    runs = 1000,
+    min_R1n = 5
 ) {
   
     # ============================================================
@@ -857,8 +858,26 @@ Func_RB_region_list_CI_fast <- function(
       perm = perm
     )
 
+    sim_Ranom <- ifelse(
+      !is.na(sim_out$R1n) & sim_out$R1n >= min_R1n,
+      sim_out$Ranom,
+      NA_real_
+    )
+
+    df_sim <- data.frame(
+      value = sim_Ranom,
+      time = seq_along(year)
+    )
+
     # store anomaly series
-    Ranom_multi[r, ] <- sim_out$Ranom
+    df_sim_loess <- data.frame(
+      value = sim_out$Ranom,
+      time = seq_along(year)
+    )
+
+    # Ranom_multi[r, ] <- sim_out$Ranom
+
+    Ranom_multi[r, ] <- calculate_loess_trend(df_sim_loess)
   }
 
   # ----------------------------------------------------------
