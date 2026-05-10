@@ -181,7 +181,6 @@ Func_Ranom_1N <- function(x)
   return(Ranom)
 }
 
-
 Func_RB_region <- function(df, year, plot = FALSE)
 {
   # ---- description:
@@ -208,8 +207,13 @@ Func_RB_region <- function(df, year, plot = FALSE)
 
   for (i in 1:p) {
     # iterate each gauge (row)
-    Robs[i, ] = Func_Ranom(df[i, ])
-    R1n[i, ] = Func_Ranom_1N(df[i, ])
+    x_i <- as.numeric(df[i, ])   # a numeric vector
+    if (sum(!is.na(x_i)) < 2) {
+      # skip the station with less than 2 valid observations
+      next
+    }
+    Robs[i, ] <- Func_Ranom(x_i)
+    R1n[i, ]  <- Func_Ranom_1N(x_i)
   }
 
   # ensure consistent support
@@ -232,10 +236,12 @@ Func_RB_region <- function(df, year, plot = FALSE)
   # visualize the RB anomaly
   if (plot)
   {
-    ggplot(out) + 
-      geom_bar(aes(x = year, y = Ranom), stat = "identity") + 
+    p <- ggplot(out) + 
+      geom_col(aes(x = year, y = Ranom)) + 
       labs(x = "time", y = "record-breaking anomaly (%)") +
       theme_minimal()
+
+    print(p)
   }
   
   return(out)
@@ -294,8 +300,8 @@ Func_RB_region_list <- function(list_df, year, plot = FALSE)
   out_Ranom = data.frame(
     time = year, 
     # estimate the AVERAGE of anomaly series 
-    Robs = colMeans(Robs, na.rm = TRUE), 
-    R1n = colMeans(R1n, na.rm = TRUE)
+    Robs = colSums(Robs, na.rm = TRUE), 
+    R1n = colSums(R1n, na.rm = TRUE)
   ) %>% 
     # estimate the RB anomaly
     mutate(
@@ -308,10 +314,13 @@ Func_RB_region_list <- function(list_df, year, plot = FALSE)
   if (plot)
   {
     # ---- visualize the RB anomaly
-    ggplot(out_Ranom) + 
-      geom_bar(aes(x = year, y = Ranom), stat = "identity") + 
+    
+    p <- ggplot(out_Ranom) + 
+      geom_col(aes(x = year, y = Ranom)) + 
       labs(x = "time", y = "record-breaking anomaly (%)") +
       theme_minimal()
+
+    print(p)
   }
       
   return(output_list)
@@ -422,6 +431,9 @@ Func_RB_region_list_CI <- function(list_df, year, seed = 1, runs = 1000)
   )
   return(result)
 }
+
+
+# ------------------------ visualization -------------------------
 
 
 plot_Ranom_CI <- function(df_Ranom) {
