@@ -498,8 +498,8 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
   # ----------------------------------------------------------
   # storage for spatially aggregated results
   # ----------------------------------------------------------
-  Robs_sum <- rep(0, n)
-  R1n_sum  <- rep(0, n)
+  Robs_sum <- rep(NA_real_, n)
+  R1n_sum  <- rep(NA_real_, n)
 
   # ----------------------------------------------------------
   # running station-wise history
@@ -538,16 +538,19 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
     # only for eligible stations
     # --------------------------------------------------------
     if (any(use)) {
-
-      # observed record-breaking events
       Robs_sum[j] <- sum(
         x_now[use] > past_max[use]
       )
 
-      # expected iid records
       R1n_sum[j] <- sum(
         1 / (past_n[use] + 1)
       )
+
+    } else {
+
+      # no valid station contributes at this time step
+      Robs_sum[j] <- NA_real_
+      R1n_sum[j]  <- NA_real_
     }
 
     # --------------------------------------------------------
@@ -631,35 +634,56 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
   n <- ncol(list_mat[[1]])
 
   # ----------------------------------------------------------
-  # storage for total aggregated records
+  # storage for each list element
+  # rows = list elements, e.g. months
+  # cols = years
   # ----------------------------------------------------------
-  Robs_total <- rep(0, n)
-  R1n_total  <- rep(0, n)
+  Robs_mat <- matrix(NA_real_, nrow = length(list_mat), ncol = n)
+  R1n_mat  <- matrix(NA_real_, nrow = length(list_mat), ncol = n)
 
   # ==========================================================
   # iterate over list elements
   # ==========================================================
   for (i in seq_along(list_mat)) {
 
-    # compute aggregated records for this element
     out_i <- Func_RB_matrix_sums(
       list_mat[[i]],
       perm = perm
     )
 
-    # accumulate totals
-    Robs_total <- Robs_total + out_i$Robs
-    R1n_total  <- R1n_total  + out_i$R1n
+    Robs_mat[i, ] <- out_i$Robs
+    R1n_mat[i, ]  <- out_i$R1n
   }
+  # ----------------------------------------------------------
+  # identify years with at least one valid contribution
+  # ----------------------------------------------------------
+  valid_Robs <- colSums(!is.na(Robs_mat)) > 0
+  valid_R1n  <- colSums(!is.na(R1n_mat)) > 0
+
+  # ----------------------------------------------------------
+  # aggregate across list elements
+  # keep NA if no element contributes in that year
+  # ----------------------------------------------------------
+  Robs_total <- rep(NA_real_, n)
+  R1n_total  <- rep(NA_real_, n)
+
+  Robs_total[valid_Robs] <- colSums(
+    Robs_mat[, valid_Robs, drop = FALSE],
+    na.rm = TRUE
+  )
+
+  R1n_total[valid_R1n] <- colSums(
+    R1n_mat[, valid_R1n, drop = FALSE],
+    na.rm = TRUE
+  )
 
   # ----------------------------------------------------------
   # compute record-breaking anomaly (%)
   # ----------------------------------------------------------
   Ranom <- ifelse(
-    R1n_total > 0,
-    (Robs_total - R1n_total) /
-      R1n_total * 100,
-    NA
+    !is.na(R1n_total) & R1n_total > 0,
+    (Robs_total - R1n_total) / R1n_total * 100,
+    NA_real_
   )
 
   return(data.frame(
@@ -667,6 +691,38 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     R1n   = R1n_total,
     Ranom = Ranom
   ))
+
+  # # ==========================================================
+  # # iterate over list elements
+  # # ==========================================================
+  # for (i in seq_along(list_mat)) {
+
+  #   # compute aggregated records for this element
+  #   out_i <- Func_RB_matrix_sums(
+  #     list_mat[[i]],
+  #     perm = perm
+  #   )
+
+  #   # accumulate totals
+  #   Robs_total <- Robs_total + out_i$Robs
+  #   R1n_total  <- R1n_total  + out_i$R1n
+  # }
+
+  # # ----------------------------------------------------------
+  # # compute record-breaking anomaly (%)
+  # # ----------------------------------------------------------
+  # Ranom <- ifelse(
+  #   R1n_total > 0,
+  #   (Robs_total - R1n_total) /
+  #     R1n_total * 100,
+  #   NA
+  # )
+
+  # return(data.frame(
+  #   Robs  = Robs_total,
+  #   R1n   = R1n_total,
+  #   Ranom = Ranom
+  # ))
 }
 
 
