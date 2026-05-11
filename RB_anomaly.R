@@ -858,16 +858,16 @@ Func_RB_region_list_CI_fast <- function(
       perm = perm
     )
 
-    sim_Ranom <- ifelse(
-      !is.na(sim_out$R1n) & sim_out$R1n >= min_R1n,
-      sim_out$Ranom,
-      NA_real_
-    )
+    # sim_Ranom <- ifelse(
+    #   !is.na(sim_out$R1n) & sim_out$R1n >= min_R1n,
+    #   sim_out$Ranom,
+    #   NA_real_
+    # )
 
-    df_sim <- data.frame(
-      value = sim_Ranom,
-      time = seq_along(year)
-    )
+    # df_sim <- data.frame(
+    #   value = sim_Ranom,
+    #   time = seq_along(year)
+    # )
 
     # store anomaly series
     df_sim_loess <- data.frame(
