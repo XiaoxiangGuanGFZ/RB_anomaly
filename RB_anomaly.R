@@ -3,6 +3,7 @@ library(tidyverse)
 library(trend)
 library(ggplot2)
 
+source("./SSA_trend.R")
 
 calculate_loess_trend <- function(data, span = 0.8) {
   loess_model = loess(value ~ time, data = data, span = span)
@@ -12,9 +13,9 @@ calculate_loess_trend <- function(data, span = 0.8) {
 # ----------- Record-breaking anomaly: matrix-based computation ----------
 
 Func_RB_matrix <- function(df) {
-  # ============================================================
+  #
   # Function: Func_RB_matrix
-  # ============================================================
+  #
   # Description:
   # Fast matrix-based computation of:
   #   (1) observed record-breaking events (Robs)
@@ -28,14 +29,12 @@ Func_RB_matrix <- function(df) {
   # This reduces complexity from roughly O(n^2) per station
   # to approximately O(n).
   #
-  # ------------------------------------------------------------
-  # Input:
+  # ---- Input:
   # df : matrix/data.frame
   #      rows    = stations/gauges
   #      columns = time (years)
   #
-  # ------------------------------------------------------------
-  # Output:
+  # ---- Output:
   # A list with:
   #   Robs : matrix of observed records
   #           1 = record-breaking event
@@ -46,13 +45,12 @@ Func_RB_matrix <- function(df) {
   #           1 / N
   #           where N = number of valid observations so far
   #
-  # ------------------------------------------------------------
-  # Notes:
+  # ---- Notes:
   # - Missing values are allowed.
   # - Spatial aggregation is NOT performed here.
   # - This function only computes station-level quantities.
-  # ============================================================
-  
+  #
+
   # ---- convert input to numeric matrix
   x <- as.matrix(df)
   x <- apply(x, 2, as.numeric)
@@ -66,9 +64,8 @@ Func_RB_matrix <- function(df) {
   Robs <- matrix(NA_real_, p, n)
   R1n  <- matrix(NA_real_, p, n)
 
-  # ----------------------------------------------------------
-  # running statistics
-  # ----------------------------------------------------------
+  # ---- running statistics
+  #
   # past_max:
   # current maximum value observed so far at each station
   #
@@ -76,14 +73,14 @@ Func_RB_matrix <- function(df) {
   # number of valid observations encountered so far
   #
   # Both vectors are updated sequentially in time.
-  # ----------------------------------------------------------
+  #
 
   past_max <- rep(-Inf, p)
   past_n   <- rep(0, p)
 
-  # ==========================================================
+  #
   # iterate over time
-  # ==========================================================
+
   for (j in 1:n) {
 
     # stations with valid value at current time
@@ -95,26 +92,26 @@ Func_RB_matrix <- function(df) {
     # stations eligible for RB evaluation
     use <- valid_now & has_past
 
-    # --------------------------------------------------------
+    # --
     # observed record-breaking event
     #
     # x > previous running maximum
-    # --------------------------------------------------------
+    #
     Robs[use, j] <- as.numeric(
       x[use, j] > past_max[use]
     )
 
-    # --------------------------------------------------------
+    # --
     # expected record probability under iid assumption
     #
     # probability = 1 / N
     # where N = number of valid observations including current
-    # --------------------------------------------------------
+    # --
     R1n[use, j] <- 1 / (past_n[use] + 1)
 
-    # --------------------------------------------------------
+    # --
     # update running history AFTER evaluating current year
-    # --------------------------------------------------------
+    # --
     update <- valid_now
 
     # update running maximum
@@ -132,18 +129,18 @@ Func_RB_matrix <- function(df) {
     R1n  = R1n
   ))
 
-  # The pmax() function in R obtains the parallel maxima of 
-  # two or more given vectors. In simpler words, 
-  # the function compares the values of the two vectors in pairs and 
+  # The pmax() function in R obtains the parallel maxima of
+  # two or more given vectors. In simpler words,
+  # the function compares the values of the two vectors in pairs and
   # returns a final vector that contains the maximum values from each pair.
 
 }
 
 
 Func_RB_region <- function(df, year, plot = FALSE) {
-  # ============================================================
+  # ==
   # Function: Func_RB_region
-  # ============================================================
+  # ==
   # Description:
   # Compute regional record-breaking anomaly (Ranom)
   # across multiple stations/gauges.
@@ -155,7 +152,7 @@ Func_RB_region <- function(df, year, plot = FALSE) {
   #
   #      Ranom = (Robs - R1n) / R1n * 100
   #
-  # ------------------------------------------------------------
+  # --
   # Input:
   # df   : matrix/data.frame
   #        rows    = stations
@@ -167,14 +164,14 @@ Func_RB_region <- function(df, year, plot = FALSE) {
   #        TRUE  -> plot anomaly series
   #        FALSE -> no plot
   #
-  # ------------------------------------------------------------
+  # --
   # Output:
   # data.frame with:
   #   year
   #   R1n   : expected records under iid climate
   #   Robs  : observed records
   #   Ranom : record-breaking anomaly (%)
-  # ============================================================
+  # ==
   # ---- consistency check
   if (length(year) != ncol(df)) {
     stop(
@@ -182,14 +179,14 @@ Func_RB_region <- function(df, year, plot = FALSE) {
     )
   }
 
-  # ----------------------------------------------------------
+  # --
   # compute station-level record statistics
-  # ----------------------------------------------------------
+  # --
   rb <- Func_RB_matrix(df)
 
-  # ----------------------------------------------------------
+  # --
   # aggregate spatially across stations
-  # ----------------------------------------------------------
+  # --
   out <- data.frame(
     year = year,
 
@@ -200,9 +197,9 @@ Func_RB_region <- function(df, year, plot = FALSE) {
     Robs = colSums(rb$Robs, na.rm = TRUE)
   )
 
-  # ----------------------------------------------------------
+  # --
   # compute RB anomaly (%)
-  # ----------------------------------------------------------
+  # --
   out$Ranom <- ifelse(
     out$R1n > 0,
     round(
@@ -212,9 +209,9 @@ Func_RB_region <- function(df, year, plot = FALSE) {
     NA
   )
 
-  # ----------------------------------------------------------
+  # --
   # optional visualization
-  # ----------------------------------------------------------
+  # --
   if (plot) {
 
     p <- ggplot(out) +
@@ -238,9 +235,9 @@ Func_RB_region_list <- function(
     year,
     plot = FALSE
 ) {
-  # ============================================================
+  # ==
   # Function: Func_RB_region_list
-  # ============================================================
+  # ==
   # Description:
   # Compute record-breaking anomaly for a LIST of datasets
   # and aggregate them into one combined anomaly series.
@@ -250,8 +247,7 @@ Func_RB_region_list <- function(
   # - compute monthly RB anomalies
   # - aggregate to seasonal or annual scale
   #
-  # ------------------------------------------------------------
-  # Input:
+  # ---- Input:
   # list_df : list of matrices/data.frames
   #
   #           each element:
@@ -262,8 +258,7 @@ Func_RB_region_list <- function(
   #
   # plot    : logical
   #
-  # ------------------------------------------------------------
-  # Output:
+  # ---- Output:
   # A list containing:
   #
   #   [[1]], [[2]], ...
@@ -272,18 +267,17 @@ Func_RB_region_list <- function(
   #   $out_Ranom
   #       aggregated RB anomaly across all elements
   #
-  # ------------------------------------------------------------
-  # Notes:
+  # ---- Notes:
   # - aggregation is performed using SUMS (not means)
   # - this follows the Lehmann et al. framework
-  # ============================================================
+  #
 
   # number of list elements
   n_list <- length(list_df)
 
-  # ----------------------------------------------------------
+  # --
   # ensure all elements have identical dimensions
-  # ----------------------------------------------------------
+  # --
   dims <- lapply(list_df, dim)
 
   if (!all(
@@ -297,9 +291,9 @@ Func_RB_region_list <- function(
   # number of time steps
   time_len <- ncol(list_df[[1]])
 
-  # ----------------------------------------------------------
+  # --
   # storage for aggregated monthly/seasonal results
-  # ----------------------------------------------------------
+  # --
   Robs <- matrix(
     NA_real_,
     nrow = n_list,
@@ -315,9 +309,9 @@ Func_RB_region_list <- function(
   # storage for outputs
   output_list <- vector("list", n_list)
 
-  # ==========================================================
+  # ==
   # iterate over list elements
-  # ==========================================================
+  # ==
   for (i in seq_len(n_list)) {
 
     # regional RB anomaly for this element
@@ -335,9 +329,9 @@ Func_RB_region_list <- function(
     R1n[i, ]  <- out_i$R1n
   }
 
-  # ----------------------------------------------------------
+  # --
   # aggregate across all list elements
-  # ----------------------------------------------------------
+  # --
   out_Ranom <- data.frame(
     time = year,
 
@@ -348,9 +342,9 @@ Func_RB_region_list <- function(
     R1n = colSums(R1n, na.rm = TRUE)
   )
 
-  # ----------------------------------------------------------
+  # ---
   # compute final anomaly (%)
-  # ----------------------------------------------------------
+  # ---
   out_Ranom$Ranom <- ifelse(
     out_Ranom$R1n > 0,
     round(
@@ -364,9 +358,9 @@ Func_RB_region_list <- function(
   # attach aggregated result
   output_list$out_Ranom <- out_Ranom
 
-  # ----------------------------------------------------------
+  # ---
   # optional visualization
-  # ----------------------------------------------------------
+  # ---
   if (plot) {
 
     p <- ggplot(out_Ranom) +
@@ -388,11 +382,11 @@ Func_RB_region_list <- function(
 # -------------- RB anomaly: CI with multiple simulations ---------------------
 
 Func_prepare_matrix_list <- function(list_df) {
-  
-    # ============================================================
+
+    # ===
     # Function: Func_prepare_matrix_list
     # Helper: convert list elements to numeric matrices once
-    # ============================================================
+    # ===
     # Description:
     # Convert all elements in a list of data frames/matrices
     # into numeric matrices.
@@ -402,15 +396,13 @@ Func_prepare_matrix_list <- function(list_df) {
     # - ensures fast matrix operations
     # - guarantees numeric storage mode
     #
-    # ------------------------------------------------------------
-    # Input:
+    # ---- Input:
     # list_df : list of data.frames or matrices
     #
-    # ------------------------------------------------------------
-    # Output:
+    # ---- Output:
     # A list of numeric matrices with the same dimensions
     # as the original inputs.
-    # ============================================================
+    # ===
   lapply(list_df, function(df) {
 
     # convert to matrix
@@ -427,11 +419,11 @@ Func_prepare_matrix_list <- function(list_df) {
 
 
 Func_RB_matrix_sums <- function(x, perm = NULL) {
-  
-    # ============================================================
+
+    # ===
     # Function: Func_RB_matrix_sums
     # Helper: compute regional Robs and R1n sums directly
-    # ============================================================
+    # ===
     # Description:
     # Fast computation of spatially aggregated:
     #
@@ -447,8 +439,7 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
     #
     # This substantially reduces memory allocation and runtime.
     #
-    # ------------------------------------------------------------
-    # Input:
+    # ---- Input:
     # x    : numeric matrix
     #        rows    = stations
     #        columns = years
@@ -461,8 +452,7 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
     #        integer vector:
     #          shuffled temporal order used for iid null model
     #
-    # ------------------------------------------------------------
-    # Output:
+    # ---- Output:
     # A list with:
     #
     #   Robs : vector of aggregated observed records
@@ -470,8 +460,7 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
     #
     # Both vectors have length = number of years.
     #
-    # ------------------------------------------------------------
-    # Notes:
+    # ---- Notes:
     # - the same temporal permutation should be applied
     #   to all variables/months to preserve spatial correlation
     #
@@ -479,7 +468,7 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
     #
     # - record statistics depend only on sequence order,
     #   not on actual calendar years
-    # ============================================================
+    # ===
 
   # number of stations
   p <- nrow(x)
@@ -487,21 +476,21 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
   # number of years
   n <- ncol(x)
 
-  # ----------------------------------------------------------
+  # ---
   # if no permutation supplied:
   # use ORIGINAL order
-  # ----------------------------------------------------------
+  # ---
   if (is.null(perm)) {
     perm <- seq_len(n)
   }
 
-  # ----------------------------------------------------------
+  # ---
   # storage for spatially aggregated results
-  # ----------------------------------------------------------
+  # ---
   Robs_sum <- rep(NA_real_, n)
   R1n_sum  <- rep(NA_real_, n)
 
-  # ----------------------------------------------------------
+  # ---
   # running station-wise history
   #
   # past_max:
@@ -509,13 +498,13 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
   #
   # past_n:
   #   number of valid observations encountered so far
-  # ----------------------------------------------------------
+  # ---
   past_max <- rep(-Inf, p)
   past_n   <- rep(0, p)
 
-  # ==========================================================
+  # ===
   # iterate over temporal sequence
-  # ==========================================================
+  # ===
   for (j in seq_len(n)) {
 
     # actual column index after permutation
@@ -533,10 +522,10 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
     # stations eligible for RB computation
     use <- valid_now & has_past
 
-    # --------------------------------------------------------
+    # ---
     # compute observed and expected records
     # only for eligible stations
-    # --------------------------------------------------------
+    # ---
     if (any(use)) {
       Robs_sum[j] <- sum(
         x_now[use] > past_max[use]
@@ -553,9 +542,9 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
       R1n_sum[j]  <- NA_real_
     }
 
-    # --------------------------------------------------------
+    # ---
     # update running history AFTER evaluation
-    # --------------------------------------------------------
+    # ---
     update <- valid_now
 
     # update running maxima
@@ -578,11 +567,11 @@ Func_RB_matrix_sums <- function(x, perm = NULL) {
 
 
 Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
-  
-    # ============================================================
+
+    # ===
     # Function: Func_RB_region_list_Ranom_only
     # Helper: compute aggregated Ranom for a list of matrices
-    # ============================================================
+    # ===
     # Description:
     # Compute aggregated regional record-breaking anomaly
     # for a LIST of matrices.
@@ -595,8 +584,7 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     # - avoids creation of intermediate data frames/lists
     # - minimizes memory allocation
     #
-    # ------------------------------------------------------------
-    # Typical application:
+    # --- Typical application:
     #
     # list_mat[[1]] = January AMS matrix
     # list_mat[[2]] = February AMS matrix
@@ -604,8 +592,7 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     #
     # Aggregate all months to obtain annual/seasonal anomaly.
     #
-    # ------------------------------------------------------------
-    # Input:
+    # ---- Input:
     # list_mat : list of numeric matrices
     #
     # perm     : optional permutation vector
@@ -616,34 +603,32 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     #            integer vector:
     #              shuffled temporal order
     #
-    # ------------------------------------------------------------
-    # Output:
+    # ---- Output:
     # data.frame with:
     #
     #   Robs  : aggregated observed records
     #   R1n   : aggregated expected iid records
     #   Ranom : record-breaking anomaly (%)
     #
-    # ------------------------------------------------------------
-    # Notes:
+    # ---- Notes:
     # - aggregation uses SUMS (not means)
     # - follows Lehmann et al. methodology
-    # ============================================================
+    # ===
 
   # number of years
   n <- ncol(list_mat[[1]])
 
-  # ----------------------------------------------------------
+  # ---
   # storage for each list element
   # rows = list elements, e.g. months
   # cols = years
-  # ----------------------------------------------------------
+  # ---
   Robs_mat <- matrix(NA_real_, nrow = length(list_mat), ncol = n)
   R1n_mat  <- matrix(NA_real_, nrow = length(list_mat), ncol = n)
 
-  # ==========================================================
+  # ===
   # iterate over list elements
-  # ==========================================================
+  # ===
   for (i in seq_along(list_mat)) {
 
     out_i <- Func_RB_matrix_sums(
@@ -654,16 +639,16 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     Robs_mat[i, ] <- out_i$Robs
     R1n_mat[i, ]  <- out_i$R1n
   }
-  # ----------------------------------------------------------
+  # ---
   # identify years with at least one valid contribution
-  # ----------------------------------------------------------
+  # ---
   valid_Robs <- colSums(!is.na(Robs_mat)) > 0
   valid_R1n  <- colSums(!is.na(R1n_mat)) > 0
 
-  # ----------------------------------------------------------
+  # ---
   # aggregate across list elements
   # keep NA if no element contributes in that year
-  # ----------------------------------------------------------
+  # ---
   Robs_total <- rep(NA_real_, n)
   R1n_total  <- rep(NA_real_, n)
 
@@ -677,9 +662,9 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     na.rm = TRUE
   )
 
-  # ----------------------------------------------------------
+  # ---
   # compute record-breaking anomaly (%)
-  # ----------------------------------------------------------
+  # ---
   Ranom <- ifelse(
     !is.na(R1n_total) & R1n_total > 0,
     (Robs_total - R1n_total) / R1n_total * 100,
@@ -692,37 +677,6 @@ Func_RB_region_list_Ranom_only <- function(list_mat, perm = NULL) {
     Ranom = Ranom
   ))
 
-  # # ==========================================================
-  # # iterate over list elements
-  # # ==========================================================
-  # for (i in seq_along(list_mat)) {
-
-  #   # compute aggregated records for this element
-  #   out_i <- Func_RB_matrix_sums(
-  #     list_mat[[i]],
-  #     perm = perm
-  #   )
-
-  #   # accumulate totals
-  #   Robs_total <- Robs_total + out_i$Robs
-  #   R1n_total  <- R1n_total  + out_i$R1n
-  # }
-
-  # # ----------------------------------------------------------
-  # # compute record-breaking anomaly (%)
-  # # ----------------------------------------------------------
-  # Ranom <- ifelse(
-  #   R1n_total > 0,
-  #   (Robs_total - R1n_total) /
-  #     R1n_total * 100,
-  #   NA
-  # )
-
-  # return(data.frame(
-  #   Robs  = Robs_total,
-  #   R1n   = R1n_total,
-  #   Ranom = Ranom
-  # ))
 }
 
 
@@ -732,13 +686,14 @@ Func_RB_region_list_CI_fast <- function(
     year,
     seed = 1,
     runs = 1000,
-    min_R1n = 5
-) {
-  
-    # ============================================================
+    L = 15,
+    groups = list(trend = 1)
+){
+
+    # ===
     # Function: Func_RB_region_list_CI_fast
     # Fast Monte Carlo CI for record-breaking anomaly
-    # ============================================================
+    # ===
     # Description:
     # Fast Monte Carlo estimation of confidence intervals (CI)
     # for regional record-breaking anomaly (Ranom).
@@ -750,8 +705,7 @@ Func_RB_region_list_CI_fast <- function(
     #   3. recompute record statistics
     #   4. derive empirical confidence intervals
     #
-    # ------------------------------------------------------------
-    # Performance improvements:
+    # --- Performance improvements:
     #
     # - matrices are prepared once
     # - no repeated data-frame creation
@@ -761,8 +715,7 @@ Func_RB_region_list_CI_fast <- function(
     # This version is substantially faster than the original
     # implementation and suitable for large Monte Carlo ensembles.
     #
-    # ------------------------------------------------------------
-    # Input:
+    # ---- Input:
     # list_df : list of matrices/data.frames
     #           rows    = stations
     #           columns = years
@@ -773,8 +726,7 @@ Func_RB_region_list_CI_fast <- function(
     #
     # runs    : number of Monte Carlo simulations
     #
-    # ------------------------------------------------------------
-    # Output:
+    # ---- Output:
     # data.frame with:
     #
     #   time
@@ -787,28 +739,27 @@ Func_RB_region_list_CI_fast <- function(
     #   ci_lower_95
     #   ci_upper_95
     #
-    # ------------------------------------------------------------
-    # Notes:
+    # ---- Notes:
     # - confidence intervals are derived empirically
     # - temporal order is destroyed during shuffling
     # - actual years lose physical meaning in simulations
     # - sequence position alone determines record probability
-    # ============================================================
-  
+    # ===
+
   # reproducibility
   set.seed(seed)
 
-  # ----------------------------------------------------------
+  # ---
   # convert all inputs to numeric matrices ONCE
-  # ----------------------------------------------------------
+  # ---
   list_mat <- Func_prepare_matrix_list(list_df)
 
   # number of years
   n <- length(year)
 
-  # ----------------------------------------------------------
+  # ---
   # consistency checks
-  # ----------------------------------------------------------
+  # ---
   if (ncol(list_mat[[1]]) != n) {
     stop(
       "Length of year does not match number of columns."
@@ -826,30 +777,30 @@ Func_RB_region_list_CI_fast <- function(
     )
   }
 
-  # ----------------------------------------------------------
+  # ---
   # storage for Monte Carlo anomaly series
   #
   # rows = simulation runs
   # cols = sequence positions
-  # ----------------------------------------------------------
+  # ---
   Ranom_multi <- matrix(
     NA_real_,
     nrow = runs,
     ncol = n
   )
 
-  # ==========================================================
+  # ===
   # Monte Carlo simulation loop
-  # ==========================================================
+  # ===
   for (r in seq_len(runs)) {
 
-    # --------------------------------------------------------
+    # ---
     # generate random temporal permutation
     #
     # IMPORTANT:
     # the SAME permutation is applied to all matrices
     # to preserve spatial and cross-variable correlation
-    # --------------------------------------------------------
+    # ---
     perm <- sample.int(n)
 
     # compute shuffled anomaly
@@ -858,35 +809,19 @@ Func_RB_region_list_CI_fast <- function(
       perm = perm
     )
 
-    # sim_Ranom <- ifelse(
-    #   !is.na(sim_out$R1n) & sim_out$R1n >= min_R1n,
-    #   sim_out$Ranom,
-    #   NA_real_
-    # )
 
-    # df_sim <- data.frame(
-    #   value = sim_Ranom,
-    #   time = seq_along(year)
-    # )
+    Ranom_multi[r, ] <- sim_out$Ranom
 
-    # store anomaly series
-    df_sim_loess <- data.frame(
-      value = sim_out$Ranom,
-      time = seq_along(year)
-    )
-
-    # Ranom_multi[r, ] <- sim_out$Ranom
-
-    Ranom_multi[r, ] <- calculate_loess_trend(df_sim_loess)
   }
 
-  # ----------------------------------------------------------
+  trend_iid <- ssa_trend_matrix(Ranom_multi, L = L, groups = groups)
+  # ---
   # empirical confidence intervals
-  # ----------------------------------------------------------
+  # ---
 
   # 90% confidence interval
   ci_lower_90 <- apply(
-    Ranom_multi,
+    trend_iid,
     2,
     quantile,
     probs = 0.05,
@@ -894,7 +829,7 @@ Func_RB_region_list_CI_fast <- function(
   )
 
   ci_upper_90 <- apply(
-    Ranom_multi,
+    trend_iid,
     2,
     quantile,
     probs = 0.95,
@@ -903,7 +838,7 @@ Func_RB_region_list_CI_fast <- function(
 
   # 95% confidence interval
   ci_lower_95 <- apply(
-    Ranom_multi,
+    trend_iid,
     2,
     quantile,
     probs = 0.025,
@@ -911,38 +846,40 @@ Func_RB_region_list_CI_fast <- function(
   )
 
   ci_upper_95 <- apply(
-    Ranom_multi,
+    trend_iid,
     2,
     quantile,
     probs = 0.975,
     na.rm = TRUE
   )
 
-  # ----------------------------------------------------------
+  # ---
   # compute observed anomaly (original temporal order)
-  # ----------------------------------------------------------
+  # ---
   obs_out <- Func_RB_region_list_Ranom_only(
     list_mat,
     perm = NULL
   )
 
-  # ----------------------------------------------------------
-  # smooth observed anomaly using LOESS
+  # ---
+  # smooth observed anomaly using SSA
   #
   # NOTE:
   # Lehmann et al. used SSA
   # here LOESS acts as approximation
-  # ----------------------------------------------------------
-  df_loess <- data.frame(
-    value = obs_out$Ranom,
-    time = year
-  )
+  # ---
 
-  original_trend <- calculate_loess_trend(df_loess)
+  # df_loess <- data.frame(
+  #   value = obs_out$Ranom,
+  #   time = year
+  # )
 
-  # ----------------------------------------------------------
+  # original_trend <- calculate_loess_trend(df_loess)
+  original_trend <- ssa_trend(obs_out$Ranom, L = L, groups = groups)
+
+  # ---
   # final output
-  # ----------------------------------------------------------
+  # ---
   return(data.frame(
     time = year,
     value = obs_out$Ranom,
