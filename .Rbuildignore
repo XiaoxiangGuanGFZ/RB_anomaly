@@ -1,0 +1,14 @@
+^.*[.]Rproj$
+^[.]Rproj[.]user$
+^[.]git$
+^[.]gitignore$
+^AGENTS[.]md$
+^references$
+^test_example[.]R$
+^.*[.]Rcheck$
+^.*[.]tar[.]gz$
+^.*[.]zip$
+^[.]codex$
+^[.]agents$
+^.*\.Rproj$
+^\.Rproj\.user$

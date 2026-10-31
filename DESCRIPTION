@@ -1,0 +1,26 @@
+Package: RBanomaly
+Title: Record-Breaking Anomaly Analysis
+Version: 0.1.0
+Authors@R: person("Xiaoxiang", "Guan", email = "guan@gfz.de", role = c("aut", "cre"))
+Description: Calculate record-breaking events and regional anomalies relative
+    to independent, identically distributed expectations. Estimate uncertainty
+    through temporal shuffling, summarize trends with LOESS or singular
+    spectrum analysis, and plot the resulting anomaly series.
+License: file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Imports:
+    formattable,
+    ggplot2 (>= 3.4.0),
+    Rssa,
+    stats,
+    trend,
+    utils
+Roxygen: list(markdown = TRUE)
+Suggests:
+    roxygen2,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+LazyData: true
+LazyDataCompression: xz
+RoxygenNote: 7.3.3
