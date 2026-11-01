@@ -1,14 +1,14 @@
 test_that("SSA reconstructs each row and preserves missing edges", {
   x <- rbind(c(NA, 1:20, NA), c(NA, 21:40, NA))
-  fit <- ssa_trend_matrix(x, L = 5)
+  fit <- rb_ssa_trend_matrix(x, L = 5)
   expect_equal(dim(fit), dim(x))
   expected <- Rssa::reconstruct(Rssa::ssa(1:20, L = 5, kind = "1d-ssa"),
                                groups = list(trend = 1))$trend
   expect_equal(fit[1, 2:21], as.numeric(expected))
   expect_true(all(is.na(fit[, c(1, 22)])))
-  expect_equal(dim(ssa_trend_matrix(x[1, , drop = FALSE], L = 5)), c(1L, 22L))
-  expect_error(ssa_trend(c(1, 2, NA, 4, 5), L = 2), "interior")
-  expect_error(ssa_trend(1:5, L = 5), "usable series length")
+  expect_equal(dim(rb_ssa_trend_matrix(x[1, , drop = FALSE], L = 5)), c(1L, 22L))
+  expect_error(rb_ssa_trend(c(1, 2, NA, 4, 5), L = 2), "interior")
+  expect_error(rb_ssa_trend(1:5, L = 5), "usable series length")
 })
 
 test_that("SSA Monte Carlo is reproducible and returns aligned intervals", {

@@ -399,22 +399,26 @@ The resulting model ensembles are evaluated with the same record-anomaly normali
 
 ## 11. Relationship to the current R package
 
+Function names below follow the unified `rb_*` API (1 November 2026). Older
+public names remain compatibility aliases; see the migration table in
+[README.md](../README.md). Numerical definitions and outputs are unchanged.
+
 This mapping is based on [RB_anomaly.R](../R/RB_anomaly.R), [trend_utils.R](../R/trend_utils.R), and [SSA_trend.R](../R/SSA_trend.R).
 
 | Function | Statistic or role | Important interpretation |
 | --- | --- | --- |
 | `rb_anomaly_ci()` | Unified raw/SSA/LOESS null bands | Explicit statistic, settings, and matched observed/simulated processing |
-| `Func_Ranom()` | Record indicators for one series | Strict exceedance; first valid observation excluded |
-| `Func_Ranom_1N()` | Expected probabilities for one series | Uses the number of valid observations |
-| `Func_RB_matrix()` | Site-by-year record and expectation matrices | Foundation for count aggregation |
-| `Func_RB_region()` | Regional annual anomaly | Returns `year`, `R1n`, `Robs`, `Ranom`, `n_eligible`; retains full precision |
-| `Func_RB_region_list()` | Combines aligned datasets/months | Pools counts; combined result is `out_Ranom` |
+| `rb_record_indicator()` | Record indicators for one series | Strict exceedance; first valid observation excluded |
+| `rb_record_probability()` | Expected probabilities for one series | Uses the number of valid observations |
+| `rb_record_matrix()` | Site-by-year record and expectation matrices | Foundation for count aggregation |
+| `rb_anomaly_region()` | Regional annual anomaly | Returns `year`, `R1n`, `Robs`, `Ranom`, `n_eligible`; retains full precision |
+| `rb_anomaly_region_list()` | Combines aligned datasets/months | Pools counts; combined result is `out_Ranom` |
 | `Func_RB_region_list_CI_fast()` | SSA trend and null SSA-trend bands | Closest existing function to the Figure 2 comparison for one regional window |
 | `Func_RB_region_list_CI()` | Raw-anomaly bands with an observed LOESS trend | Bands describe raw anomalies, not that LOESS trend |
 | `RB_Ranom_CI()` | Raw-anomaly bands for one input matrix | Also returns observed LOESS; same statistic distinction applies |
 | `LOESS_Trend_CI()` | LOESS trend and LOESS-trend bands | A smoothing alternative; returns a 90% interval, not the paper's SSA method |
 | `RB_Ranom_CI_index()` | Deprecated calendar-reindexed shuffled anomalies | Reorders results by sampled original years; differs from the sequence-position null in SI Fig. S6 |
-| `ssa_trend()` / `ssa_trend_matrix()` | SSA reconstruction | Window and selected eigentriples must be recorded |
+| `rb_ssa_trend()` / `rb_ssa_trend_matrix()` | SSA reconstruction | Window and selected eigentriples must be recorded |
 
 Important implementation boundaries:
 
@@ -444,8 +448,8 @@ x <- rbind(
 )
 year <- 2001:2006
 
-site_records <- Func_RB_matrix(x)
-annual <- Func_RB_region(x, year)
+site_records <- rb_record_matrix(x)
+annual <- rb_anomaly_region(x, year)
 annual
 
 expected <- c(0, 1/2, 5/6, 1/3, 1/4, 9/20)
@@ -480,7 +484,7 @@ fit <- Func_RB_region_list_CI_fast(
   groups = list(trend = 1)    # package choice; not fully specified by paper
 )
 
-plot_Ranom_CI(fit)
+rb_plot_anomaly_ci(fit)
 
 # Compare the observed SSA trend, not the raw annual bars, with these bands.
 outside_95 <- with(fit,

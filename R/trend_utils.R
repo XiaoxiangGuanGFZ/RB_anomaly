@@ -5,7 +5,7 @@
 #' @param x Numeric time series.
 #' @return Numeric vector containing the estimated slope and p-value.
 #' @export
-senslope <- function(x) 
+rb_sen_slope <- function(x)
 {
   # ---- description
   # a function to test the trend with Sen's slope method
@@ -27,7 +27,7 @@ senslope <- function(x)
 #' @param x Numeric time series.
 #' @return Named numeric scalar containing the regression slope.
 #' @export
-lmslope <- function(x) {
+rb_linear_slope <- function(x) {
   # ---- description:
   # linear regression method-derived trend
   # 
@@ -52,7 +52,7 @@ lmslope <- function(x) {
 #' @param x Numeric time series.
 #' @return Numeric vector containing the test statistic and p-value.
 #' @export
-mk_test <- function(x)
+rb_mann_kendall <- function(x)
 {
   # ---- description:
   # trend detection with Mann-Kendall rank method
@@ -77,7 +77,7 @@ mk_test <- function(x)
 #' @param span LOESS smoothing span.
 #' @return Numeric vector of fitted values at the input times.
 #' @export
-calculate_loess_trend <- function(data, span = 0.8) {
+rb_loess_trend <- function(data, span = 0.8) {
   if (!is.data.frame(data) || !all(c("time", "value") %in% names(data)) ||
       !is.numeric(data$time) || !is.numeric(data$value) ||
       any(!is.finite(data$time)) || any(is.infinite(data$value))) {
@@ -98,3 +98,31 @@ calculate_loess_trend <- function(data, span = 0.8) {
   out
 }
 
+
+# ---- Compatibility aliases ----------------------------------------------
+# Older scripts can keep their names and named arguments. These aliases
+# refer to the same implementation; use the rb_* API for new analyses.
+
+#' @rdname rb_loess_trend
+#' @details `calculate_loess_trend()` is a compatibility alias. Use `rb_loess_trend()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+calculate_loess_trend <- rb_loess_trend
+
+#' @rdname rb_sen_slope
+#' @details `senslope()` is a compatibility alias. Use `rb_sen_slope()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+senslope <- rb_sen_slope
+
+#' @rdname rb_linear_slope
+#' @details `lmslope()` is a compatibility alias. Use `rb_linear_slope()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+lmslope <- rb_linear_slope
+
+#' @rdname rb_mann_kendall
+#' @details `mk_test()` is a compatibility alias. Use `rb_mann_kendall()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+mk_test <- rb_mann_kendall

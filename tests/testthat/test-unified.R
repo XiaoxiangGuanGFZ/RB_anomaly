@@ -5,7 +5,7 @@ test_that("enumerated permutations recover the exact continuous iid record law",
       cbind(x[i], permutations(x[-i]))
     }))
   }
-  records <- Func_RB_matrix(permutations(1:5))
+  records <- rb_record_matrix(permutations(1:5))
   expect_equal(colMeans(records$Robs)[-1], 1 / (2:5))
   expect_equal(mean(rowSums(records$Robs, na.rm = TRUE)), sum(1 / (2:5)))
 })
@@ -15,18 +15,18 @@ test_that("edge cases retain dimensions, eligibility, and exact count pooling", 
              tied = c(NA, 2, 2, 2, NA), absent = rep(NA_real_, 5),
              single = c(NA, NA, 2, NA, NA))
   colnames(x) <- as.character(2001:2005)
-  detail <- Func_RB_matrix(x)
-  out <- Func_RB_region(x, 2001:2005)
+  detail <- rb_record_matrix(x)
+  out <- rb_anomaly_region(x, 2001:2005)
   expect_identical(dimnames(detail$Robs), dimnames(x))
   expect_equal(out$Robs, c(0, 0, 1, 1, 0))
   expect_equal(out$R1n, c(0, 0, 1.5, 1, 0))
   expect_equal(out$n_eligible, c(0, 0, 3, 3, 0))
   expect_equal(out$Ranom, c(NA, NA, -100/3, 0, NA))
-  one <- Func_RB_matrix(matrix(5, 1, 1))
+  one <- rb_record_matrix(matrix(5, 1, 1))
   expect_equal(dim(one$Robs), c(1L, 1L))
   expect_true(is.na(one$Robs[1, 1]))
-  expect_error(Func_Ranom(c(NA, 1)), "two valid")
-  pooled <- Func_RB_region_list(list(matrix(c(1, 2, 3), 1),
+  expect_error(rb_record_indicator(c(NA, 1)), "two valid")
+  pooled <- rb_anomaly_region_list(list(matrix(c(1, 2, 3), 1),
                                    matrix(c(NA, 2, 1), 1)), 1:3)$out_Ranom
   expect_equal(pooled$Ranom[3], 100 * (1 / (1/3 + 1/2) - 1))
   expect_equal(pooled$n_eligible, c(0, 1, 2))
@@ -34,12 +34,12 @@ test_that("edge cases retain dimensions, eligibility, and exact count pooling", 
 
 test_that("input validation rejects ambiguous data before computation", {
   x <- matrix(1:30, 1)
-  expect_error(Func_RB_matrix(matrix(character(), 0, 0)), "non-empty")
-  expect_error(Func_RB_matrix(data.frame(a = "1")), "numeric")
-  expect_error(Func_RB_matrix(matrix(c(1, Inf), 1)), "finite")
-  expect_error(Func_RB_region(x, rep(1, 30)), "strictly increasing")
-  expect_error(Func_RB_region_list(list(), 1:30), "non-empty")
-  expect_error(Func_RB_region_list(list(x, t(x)), 1:30), "shapes")
+  expect_error(rb_record_matrix(matrix(character(), 0, 0)), "non-empty")
+  expect_error(rb_record_matrix(data.frame(a = "1")), "numeric")
+  expect_error(rb_record_matrix(matrix(c(1, Inf), 1)), "finite")
+  expect_error(rb_anomaly_region(x, rep(1, 30)), "strictly increasing")
+  expect_error(rb_anomaly_region_list(list(), 1:30), "non-empty")
+  expect_error(rb_anomaly_region_list(list(x, t(x)), 1:30), "shapes")
   expect_error(rb_anomaly_ci(list(x), 1:30, runs = 0), "positive integer")
   expect_error(rb_anomaly_ci(list(x), 1:30, runs = 1.5), "positive integer")
   expect_error(rb_anomaly_ci(list(x), 1:30, seed = -1), "seed")
@@ -73,8 +73,8 @@ test_that("null bands match an independent manual permutation calculation", {
   for (target in c("raw", "ssa", "loess")) {
     smooth <- switch(target,
       raw = function(z) z,
-      ssa = function(z) ssa_trend(z, L = 5),
-      loess = function(z) calculate_loess_trend(data.frame(time = year, value = z)))
+      ssa = function(z) rb_ssa_trend(z, L = 5),
+      loess = function(z) rb_loess_trend(data.frame(time = year, value = z)))
     simulations <- t(apply(raw, 1, smooth))
     expected <- apply(simulations[, -1, drop = FALSE], 2, quantile,
                       probs = c(.05, .95, .025, .975), names = FALSE)
@@ -85,7 +85,7 @@ test_that("null bands match an independent manual permutation calculation", {
     expect_equal(fit$data$statistic_value, smooth(manual(list(x, y))))
     expect_identical(fit$settings$statistic, target)
     expect_equal(fit$data$time, year)
-    expect_s3_class(plot_Ranom_CI(fit, p_print = FALSE), "ggplot")
+    expect_s3_class(rb_plot_anomaly_ci(fit, p_print = FALSE), "ggplot")
   }
 })
 
@@ -111,7 +111,7 @@ test_that("seeded runs are local and wrappers retain their targets", {
   loess <- LOESS_Trend_CI(x, 1:30, runs = 4)
   new <- rb_anomaly_ci(list(x), 1:30, "loess", runs = 4, seed = 9)
   expect_equal(loess$ci_lower, new$data$ci_lower_90)
-  expect_length(ggplot2::ggplot_build(plot_Ranom_CI(loess, FALSE))$data, 5)
+  expect_length(ggplot2::ggplot_build(rb_plot_anomaly_ci(loess, FALSE))$data, 5)
   expect_warning(RB_Ranom_CI_index(x, 1:30, runs = 2), "deprecated")
 })
 

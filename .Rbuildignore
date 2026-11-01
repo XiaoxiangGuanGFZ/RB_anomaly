@@ -5,6 +5,7 @@
 ^AGENTS[.]md$
 ^references$
 ^test_example[.]R$
+^test_rb_anomaly[.]R$
 ^.*[.]Rcheck$
 ^.*[.]tar[.]gz$
 ^.*[.]zip$

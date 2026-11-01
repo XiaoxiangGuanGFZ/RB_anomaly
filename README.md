@@ -33,9 +33,9 @@ Start an analysis in a fresh R session:
 ```r
 library(RBanomaly)
 x <- rbind(c(1, 2, 2, 4), c(2, NA, 3, 1)) # stations x years
-result <- Func_RB_region(x, year = 2001:2004)
-plot_Ranom(result$Ranom, result$year)
-?Func_RB_region
+result <- rb_anomaly_region(x, year = 2001:2004)
+rb_plot_anomaly(result$Ranom, result$year)
+?rb_anomaly_region
 help(package = "RBanomaly")
 ```
 
@@ -49,8 +49,70 @@ Load the existing example data through the package:
 data("mega_floods", package = "RBanomaly")
 year <- df_AMS_All$year
 x <- t(as.matrix(df_AMS_All[, 2:4])) # transpose gauge columns
-result <- Func_RB_region(x, year)
+result <- rb_anomaly_region(x, year)
 ```
+
+## Step-by-step discharge walkthrough
+
+[test_rb_anomaly.R](test_rb_anomaly.R) is a runnable, commented tutorial using
+the bundled discharge data. After installing this checkout, run
+`Rscript test_rb_anomaly.R`, or source it section by section in RStudio.
+It covers gauge-ID alignment, sample selection, vector/matrix records, pooled
+counts, missing data, raw/SSA/LOESS null bands, interpretation, plots, and legacy
+interfaces. Settings are collected at the top of the script.
+
+Defaults use up to 20 complete gauges over 1961–2010 and 100 simulations per
+main target for a quick demonstration. This selected sample and simulation
+count are not a publication analysis. Plots display interactively; file export
+is disabled by default and requires an explicit overwrite choice for existing
+outputs. The script is included in the repository and excluded from package
+builds; `tests/testthat/` remains the automated regression suite.
+
+## Unified function names (1 November 2026)
+
+The recommended public API uses lowercase `rb_` names with snake_case.
+Names identify the calculation (`record`, `anomaly`), representation
+(`matrix`, `region`, `list`), or operation (`plot`, `format`).
+Generic trend helpers use the same prefix for consistent discovery.
+`rb_anomaly_ci()` remains the single recommended simulation entry point;
+select raw, SSA, or LOESS using its `statistic` argument.
+
+| Previous name (still supported) | Recommended name |
+| --- | --- |
+| `Func_RB_matrix()` | `rb_record_matrix()` |
+| `Func_Ranom()` | `rb_record_indicator()` |
+| `Func_Ranom_1N()` | `rb_record_probability()` |
+| `Func_RB_region()` | `rb_anomaly_region()` |
+| `Func_RB_region_list()` | `rb_anomaly_region_list()` |
+| `ssa_trend()` | `rb_ssa_trend()` |
+| `ssa_trend_matrix()` | `rb_ssa_trend_matrix()` |
+| `calculate_loess_trend()` | `rb_loess_trend()` |
+| `senslope()` | `rb_sen_slope()` |
+| `lmslope()` | `rb_linear_slope()` |
+| `mk_test()` | `rb_mann_kendall()` |
+| `plot_Ranom()` | `rb_plot_anomaly()` |
+| `plot_Ranom_CI()` | `rb_plot_anomaly_ci()` |
+| `trend_formatter()` | `rb_format_trend()` |
+| `pvalue_formatter()` | `rb_format_pvalue()` |
+
+Older public names are compatibility aliases to the same functions, preserving
+positional/named arguments and output fields. This update changes naming, not
+record definitions, numerical calculations, random-seed behavior, or result
+schemas. In particular, fields such as `Robs`, `R1n`, and `Ranom` are unchanged.
+The walkthrough's main workflow, examples, and tests now use the canonical names;
+its compatibility section intentionally demonstrates the older CI interfaces.
+
+The five older CI interfaces remain supported with their original targets:
+`RB_Ranom_CI()` / `Func_RB_region_list_CI()` for raw bands,
+`Func_RB_region_list_CI_fast()` for SSA, and `LOESS_Trend_CI()` for LOESS.
+`RB_Ranom_CI_index()` retains its existing deprecation warning. Their
+`rb_legacy_*` implementations are internal, not additional recommended APIs.
+Likewise, helpers such as `rb_validate_matrix()`, `rb_scan_records()`, and
+`rb_aggregate_records()` are internal and are not exported. Use
+`getNamespaceExports("RBanomaly")` or package help to inspect the public API.
+
+Reinstall the package and restart R before running the updated walkthrough.
+Source filenames remain unchanged to avoid breaking repository links.
 
 ## Unified record and simulation workflow (31 October 2026)
 
@@ -72,7 +134,7 @@ fit <- rb_anomaly_ci(
 )
 fit$data       # counts, eligibility, anomaly, selected statistic, null bands
 fit$settings   # statistic, seed, simulation and smoothing settings
-plot_Ranom_CI(fit)
+rb_plot_anomaly_ci(fit)
 ```
 
 `statistic = "ssa"` (default), `"raw"`, or `"loess"` selects the quantity
@@ -125,17 +187,17 @@ before counting its records.
   Install/reload the package after updating; direct sourcing of
   `Func_Anomaly.R` is no longer supported.
 
-| Existing interface | Preserved statistical target and output |
+| Interface | Statistical target and output |
 | --- | --- |
-| `Func_Ranom()`, `Func_Ranom_1N()` | Vector record indicators / expected probabilities |
-| `Func_RB_matrix()` | Gauge-level record indicators and expectations |
-| `Func_RB_region()`, `Func_RB_region_list()` | Pooled counts and full-precision anomalies; adds eligibility |
+| `rb_record_indicator()`, `rb_record_probability()` | Vector record indicators / expected probabilities |
+| `rb_record_matrix()` | Gauge-level record indicators and expectations |
+| `rb_anomaly_region()`, `rb_anomaly_region_list()` | Pooled counts and full-precision anomalies; adds eligibility |
 | `RB_Ranom_CI()`, `Func_RB_region_list_CI()` | Raw-anomaly bands; accompanying `loess_trend` is descriptive, not the band target |
 | `Func_RB_region_list_CI_fast()` | SSA-trend bands; legacy `loess_trend` field still contains SSA |
 | `LOESS_Trend_CI()` | LOESS-trend bands, with legacy 90% `ci_lower` / `ci_upper` fields |
 | `RB_Ranom_CI_index()` | Deprecated calendar-reindexed calculation; retained with a warning, excluded from the recommended workflow |
 
-`plot_Ranom_CI()` accepts the new result, its `data` component, and legacy
+`rb_plot_anomaly_ci()` accepts the new result, its `data` component, and legacy
 outputs (including 90%-only LOESS results). For new results it draws the
 selected statistic against matching bands. With legacy raw-band results,
 do not interpret their separate observed LOESS line against the raw bands.
@@ -148,8 +210,8 @@ do not interpret their separate observed LOESS line against the raw bands.
 - `R/Ranom_plot.R`: plots and table formatters.
 - `R/package.R`, `R/data.R`: package imports and example-data documentation.
 
-`R/Func_Anomaly.R` has been removed after relocating its functions. The public
-exports remain available, with `rb_anomaly_ci()` added. Tests cover exact
+`R/Func_Anomaly.R` has been removed after relocating its functions. The original public
+exports remain available as documented above, alongside the canonical `rb_*` API. Tests cover exact
 record probabilities by permutation enumeration, ties and missing histories,
 empty eligible years, count pooling, full/aggregate equivalence, manual
 raw/SSA/LOESS null calculations, seeded reproducibility, compatibility, and

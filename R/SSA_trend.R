@@ -11,8 +11,8 @@
 #' @return Numeric vector of the same length as x.
 #' @export
 #' @examples
-#' ssa_trend(c(NA, seq_len(20)), L = 5)
-ssa_trend <- function(x, L = 15, groups = list(trend = 1)) {
+#' rb_ssa_trend(c(NA, seq_len(20)), L = 5)
+rb_ssa_trend <- function(x, L = 15, groups = list(trend = 1)) {
   if (!is.numeric(x) || !is.null(dim(x))) {
     stop("x must be a numeric vector.")
   }
@@ -39,19 +39,35 @@ ssa_trend <- function(x, L = 15, groups = list(trend = 1)) {
 
 #' Reconstruct SSA Trends for Matrix Rows
 #'
-#' Apply [ssa_trend()] independently to each row while preserving matrix shape.
+#' Apply [rb_ssa_trend()] independently to each row while preserving matrix shape.
 #' @param data_matrix Numeric matrix with series in rows and time in columns.
-#' @inheritParams ssa_trend
+#' @inheritParams rb_ssa_trend
 #' @return Numeric matrix with the same dimensions and dimnames as data_matrix.
 #' @export
-ssa_trend_matrix <- function(data_matrix, L = 15, groups = list(trend = 1)) {
+rb_ssa_trend_matrix <- function(data_matrix, L = 15, groups = list(trend = 1)) {
   if (!is.matrix(data_matrix) || !is.numeric(data_matrix)) {
     stop("data_matrix must be a numeric matrix.")
   }
   out <- matrix(NA_real_, nrow(data_matrix), ncol(data_matrix),
                 dimnames = dimnames(data_matrix))
   for (i in seq_len(nrow(data_matrix))) {
-    out[i, ] <- ssa_trend(data_matrix[i, ], L = L, groups = groups)
+    out[i, ] <- rb_ssa_trend(data_matrix[i, ], L = L, groups = groups)
   }
   out
 }
+
+# ---- Compatibility aliases ----------------------------------------------
+# Older scripts can keep their names and named arguments. These aliases
+# refer to the same implementation; use the rb_* API for new analyses.
+
+#' @rdname rb_ssa_trend
+#' @details `ssa_trend()` is a compatibility alias. Use `rb_ssa_trend()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+ssa_trend <- rb_ssa_trend
+
+#' @rdname rb_ssa_trend_matrix
+#' @details `ssa_trend_matrix()` is a compatibility alias. Use `rb_ssa_trend_matrix()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+ssa_trend_matrix <- rb_ssa_trend_matrix

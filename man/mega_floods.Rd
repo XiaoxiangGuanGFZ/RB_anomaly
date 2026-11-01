@@ -28,5 +28,5 @@ transpose its gauge columns before calling the anomaly functions.
 data("mega_floods", package = "RBanomaly")
 year <- df_AMS_All$year
 x <- t(as.matrix(df_AMS_All[, 2:4]))
-head(Func_RB_region(x, year))
+head(rb_anomaly_region(x, year))
 }

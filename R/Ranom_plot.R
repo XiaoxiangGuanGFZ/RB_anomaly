@@ -10,7 +10,7 @@
 #' @param p_print Logical; print the plot when TRUE. The plot is always returned.
 #' @return A ggplot object.
 #' @export
-plot_Ranom <- function(Ranom, year, p_print = TRUE) {
+rb_plot_anomaly <- function(Ranom, year, p_print = TRUE) {
 
   df = data.frame(
     time = year,
@@ -62,7 +62,7 @@ plot_Ranom <- function(Ranom, year, p_print = TRUE) {
 #' @param p_print Logical; print the plot when TRUE. The plot is always returned.
 #' @return A ggplot object.
 #' @export
-plot_Ranom_CI <- function(df_Ranom, p_print = TRUE) {
+rb_plot_anomaly_ci <- function(df_Ranom, p_print = TRUE) {
 
     # columns in the input data frame df_Ranom:
     # time, value, loess_trend,
@@ -146,7 +146,7 @@ plot_Ranom_CI <- function(df_Ranom, p_print = TRUE) {
 #' @param text Optional display text corresponding to x.
 #' @format A formatter function.
 #' @export
-trend_formatter <- formattable::formatter(
+rb_format_trend <- formattable::formatter(
   "span",
   style = x ~ formattable::style(
     color = ifelse(x > 0, "red", "green"), # Green for positive, red for negative
@@ -163,7 +163,7 @@ trend_formatter <- formattable::formatter(
 #' @param text Optional display text corresponding to x.
 #' @format A formatter function.
 #' @export
-pvalue_formatter <- formattable::formatter(
+rb_format_pvalue <- formattable::formatter(
   "span",
   style = x ~ formattable::style(
     background.color = ifelse(x < 0.05, "gray", "transparent"), # Gray background for p < 0.05
@@ -172,3 +172,31 @@ pvalue_formatter <- formattable::formatter(
   x ~ sprintf("%.3f", x) # Format p-values to three decimal places
 )
 
+
+# ---- Compatibility aliases ----------------------------------------------
+# Older scripts can keep their names and named arguments. These aliases
+# refer to the same implementation; use the rb_* API for new analyses.
+
+#' @rdname rb_plot_anomaly
+#' @details `plot_Ranom()` is a compatibility alias. Use `rb_plot_anomaly()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+plot_Ranom <- rb_plot_anomaly
+
+#' @rdname rb_plot_anomaly_ci
+#' @details `plot_Ranom_CI()` is a compatibility alias. Use `rb_plot_anomaly_ci()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+plot_Ranom_CI <- rb_plot_anomaly_ci
+
+#' @rdname rb_format_trend
+#' @details `trend_formatter()` is a compatibility alias. Use `rb_format_trend()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+trend_formatter <- rb_format_trend
+
+#' @rdname rb_format_pvalue
+#' @details `pvalue_formatter()` is a compatibility alias. Use `rb_format_pvalue()`
+#'   in new code; arguments and returned values are unchanged.
+#' @export
+pvalue_formatter <- rb_format_pvalue

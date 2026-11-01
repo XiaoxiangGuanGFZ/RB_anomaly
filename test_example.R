@@ -92,11 +92,11 @@ ggplot() +
   theme_minimal()
 
 
-df_Ranom$ssa_trend = ssa_trend(df_Ranom$Ranom, L = 20)
+df_Ranom$rb_ssa_trend = rb_ssa_trend(df_Ranom$Ranom, L = 20)
 
 ggplot(data = df_Ranom) +
   geom_col(aes(x = year, y = Ranom)) +
-  geom_line(aes(x = year, y=ssa_trend), color = "navy", size = 1.2) +
+  geom_line(aes(x = year, y=rb_ssa_trend), color = "navy", size = 1.2) +
   labs(y = "annual record-breaking anomaly (%)", x = "year") +
   theme_minimal()
 
@@ -111,7 +111,7 @@ L_test <- c(5, 10, 15)
 
 for (i in seq_along(L_test)) {
   L = L_test[i]
-  df$trend <- ssa_trend(df$value, L = L)
+  df$trend <- rb_ssa_trend(df$value, L = L)
   p <- ggplot(data = df) +
     geom_col(aes(x = time, y = value),
              fill = "grey70",
@@ -183,4 +183,4 @@ results <- Func_RB_region_list_CI_fast(
     groups = list(trend = 1)
 )
 
-plot_Ranom_CI(results)
+rb_plot_anomaly_ci(results)
